@@ -1,0 +1,17 @@
+# Example ENV File
+API_SECRET=
+DB_HOST=127.0.0.1
+DB_DRIVER=postgres
+DB_USER=username
+DB_PASSWORD=password
+DB_NAME=goblog_api
+DB_PORT=5432 #Default postgres port
+
+# Postgres Test
+TEST_API_SECRET=
+TEST_DB_HOST=127.0.0.1
+TEST_DB_DRIVER=postgres
+TEST_DB_USER=username
+TEST_DB_PASSWORD=password
+TEST_DB_NAME=goblog_api_test
+TEST_DB_PORT=5432
