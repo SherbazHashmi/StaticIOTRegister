@@ -13,7 +13,7 @@ type Post struct {
 	Title     string
 	Content   string
 	Author    User
-	AuthorID  uint64
+	AuthorID  uint32
 	CreatedAt time.Time
 	UpdatedAt time.Time
 }

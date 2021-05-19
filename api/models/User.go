@@ -109,20 +109,19 @@ func (u *User) Validate(action string) error {
 
 func validateField(validationAction ValidationAction) bool {
 	requiredValidations := validationAction.RequiredValidations
-	isValid := true
 	for _, requiredValidation := range requiredValidations {
 		switch requiredValidation {
 		case "presence":
 			if validationAction.Field.Value == "" {
-				isValid = false
+				return false
 			}
 		case "email_validate":
 			if checkmail.ValidateFormat(validationAction.Field.Value) != nil {
-				isValid = false
+				return false
 			}
 		}
 	}
-	return isValid
+	return true
 }
 
 func (u *User) SaveUser(db *gorm.DB) (*User, error) {
@@ -162,7 +161,7 @@ func (u *User) FindUserByID(db *gorm.DB, uid uint32) (*User, error) {
 	// Setup error object
 	var err error
 
-	// Query database for the user id, pull out potential error poitner
+	// Query database for the user id, pull out potential error pointer
 	err = db.Debug().Model(User{}).Where("id = ?", uid).Take(&u).Error
 
 	// If there is an error, return an empty user with an error message.

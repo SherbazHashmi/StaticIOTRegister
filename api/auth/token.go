@@ -23,10 +23,13 @@ func CreateToken(user_id uint32) (string, error) {
 }
 
 func TokenValid(r *http.Request) error {
-	tokenString := ExtractToken(r)
+	tokenString, err := ExtractToken(r)
+	if err != nil {
+		return fmt.Errorf("[ERROR] Unable to extract token")
+	}
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
+			return nil, fmt.Errorf("[ERROR] Unexpected signing method: %v", token.Header["alg"])
 		}
 		return []byte(os.Getenv("API_SECRET")), nil
 	})
@@ -51,30 +54,32 @@ func Pretty(data interface{}) {
 	fmt.Println(string(b))
 }
 
-func ExtractToken(r *http.Request) string {
+func ExtractToken(r *http.Request) (string, error) {
 
 	// attempting to extract token from the url parameter
 	keys := r.URL.Query()
 	token := keys.Get("token")
 	if token != "" {
-		return token
+		return token, nil
 	}
 
 	// attempting to retrieving bearer token from the headers
 	bearerToken := r.Header.Get("Authorization")
 
 	if len(strings.Split(bearerToken, " ")) == 2 {
-		return strings.Split(bearerToken, " ")[1]
+		return strings.Split(bearerToken, " ")[1], nil
 	}
-	return ""
+	return "", nil
 }
 
 func ExtractTokenID(r *http.Request) (uint32, error) {
-	tokenString := ExtractToken(r)
-
+	tokenString, err := ExtractToken(r)
+	if err != nil {
+		return 0, fmt.Errorf("[ERROR] %s", err)
+	}
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fmt.Errorf("Unexpected signing method %v", token.Header["alg"])
+			return nil, fmt.Errorf("[ERROR] Unexpected signing method %v", token.Header["alg"])
 		}
 		return []byte(os.Getenv("API_SECRET")), nil
 	})
