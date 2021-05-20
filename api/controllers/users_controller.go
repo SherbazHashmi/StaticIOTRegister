@@ -47,6 +47,17 @@ func (s *Server) CreateUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Location", fmt.Sprintf("%s%s%d", r.Host, r.RequestURI, userCreated.ID))
 }
 
+func (s *Server) GetUsers(w http.ResponseWriter, r *http.Request) {
+	user := models.User{}
+	users, err := user.FindAllUsers(s.DB)
+
+	if err != nil {
+		responses.ERROR(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	responses.JSON(w, http.StatusOK, users)
+}
 func (s *Server) GetUser(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	uid, err := strconv.ParseUint(vars["id"], 10, 32)
@@ -119,7 +130,6 @@ func (s *Server) UpdateUser(w http.ResponseWriter, r *http.Request) {
 
 	responses.JSON(w, http.StatusOK, updatedUser)
 }
-
 
 func (s *Server) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)

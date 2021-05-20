@@ -2,6 +2,7 @@ package models
 
 import (
 	"errors"
+	"fmt"
 	"github.com/badoux/checkmail"
 	"github.com/jinzhu/gorm"
 	"golang.org/x/crypto/bcrypt"
@@ -96,13 +97,16 @@ func (u *User) Validate(action string) error {
 		}
 
 		// Iterate through required actions and perform them
-		if validateField(fieldToValidate) {
+		if !validateField(fieldToValidate) {
 			invalidFields = append(invalidFields, fieldToValidate.Field.Label)
 		}
 	}
 
 	if len(invalidFields) > 0 {
-		return errors.New("Following fields are invalid: " + strings.Join(invalidFields, ", ")[:1])
+		log.Printf(
+			fmt.Sprintf("User %s", strings.Join(invalidFields, ", ")),
+		)
+		return errors.New("Following fields are invalid: " + strings.Join(invalidFields, ", "))
 	}
 	return nil
 }
