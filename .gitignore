@@ -18,5 +18,8 @@
 # Environment Files
 .env
 
-
+# Jetbrains IDE Files
 .idea
+
+# Secret files
+/*.secret
