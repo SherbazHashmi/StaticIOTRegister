@@ -2,6 +2,7 @@ package models
 
 import (
 	"errors"
+	"github.com/SherbazHashmi/goblog/api/formaterror"
 	"github.com/jinzhu/gorm"
 	"html"
 	"strings"
@@ -9,13 +10,13 @@ import (
 )
 
 type Post struct {
-	ID        uint64
-	Title     string
-	Content   string
-	Author    User
-	AuthorID  uint32
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID        uint64    `gorm:"primary_key;auto_increment" json:"id"`
+	Title     string    `gorm:"size:255;not null;unique" json:"title"`
+	Content   string    `gorm:"size:255;not null;" json:"content"`
+	Author    User      `json:"author"`
+	AuthorID  uint32    `gorm:"not null" json:"author_id"`
+	CreatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"created_at"`
+	UpdatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"updated_at"`
 }
 
 func (p *Post) Prepare() {
@@ -42,10 +43,14 @@ func (p *Post) Validate() error {
 
 func (p *Post) SavePost(db *gorm.DB) (*Post, error) {
 	var err error
+	err = p.Validate()
+	if err != nil {
+		return &Post{}, errors.New(err.Error())
+	}
 	err = db.Debug().Model(&Post{}).Create(&p).Error
 
 	if err != nil {
-		return &Post{}, err
+		return &Post{}, formaterror.FormatError(err.Error())
 	}
 
 	if p.ID != 0 {

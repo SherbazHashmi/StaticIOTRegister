@@ -10,8 +10,10 @@ import (
 	"github.com/SherbazHashmi/goblog/api/responses"
 	"github.com/gorilla/mux"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"strconv"
+	"strings"
 )
 
 func (s *Server) CreatePost(w http.ResponseWriter, r *http.Request) {
@@ -25,26 +27,36 @@ func (s *Server) CreatePost(w http.ResponseWriter, r *http.Request) {
 	post := models.Post{}
 
 	err = json.Unmarshal(body, &post)
-
+	log.Printf("author_id: %v", post.AuthorID)
 	if err != nil {
 		responses.ERROR(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
 	uid, err := auth.ExtractTokenID(r)
-
 	if err != nil {
-		responses.ERROR(w, http.StatusUnauthorized, errors.New(" Unauthorized access"))
+		responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized access"))
+		return
+	}
+	//log.Printf("uid: %d, post: %v", uid, post)
+
+	if post.AuthorID == 0 {
+		responses.ERROR(w, http.StatusUnprocessableEntity, errors.New("Required Author"))
+		return
+	}
+	if uid != post.AuthorID {
+		responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized access"))
 		return
 	}
 
-	if uid != post.AuthorID {
-		responses.ERROR(w, http.StatusUnauthorized, errors.New(" Unauthorized access"))
-	}
 
 	postCreated, err := post.SavePost(s.DB)
-
 	if err != nil {
+
+		if strings.Contains(err.Error(), "equired"){
+			responses.ERROR(w, http.StatusUnprocessableEntity, err)
+			return
+		}
 		formattedError := formaterror.FormatError(err.Error())
 		responses.ERROR(w, http.StatusInternalServerError, formattedError)
 		return
@@ -84,45 +96,72 @@ func (s *Server) GetPost(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) UpdatePost(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	pid, err := strconv.ParseUint(vars["id"], 10, 64)
 
+	// Check if the post id is valid
+	pid, err := strconv.ParseUint(vars["id"], 10, 64)
 	if err != nil {
 		responses.ERROR(w, http.StatusBadRequest, err)
 		return
 	}
 
+	//CHeck if the auth token is valid and  get the user id from it
 	uid, err := auth.ExtractTokenID(r)
-
 	if err != nil {
-		responses.ERROR(w, http.StatusUnauthorized, errors.New(" unauthorized access"))
+		responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized"))
 		return
 	}
 
+	// Check if the post exist
 	post := models.Post{}
 	err = s.DB.Debug().Model(models.Post{}).Where("id = ?", pid).Take(&post).Error
-
 	if err != nil {
-		responses.ERROR(w, http.StatusNotFound, errors.New("post not found"))
+		responses.ERROR(w, http.StatusNotFound, errors.New("Post not found"))
 		return
 	}
 
+	// If a user attempt to update a post not belonging to him
 	if uid != post.AuthorID {
-		responses.ERROR(w, http.StatusUnauthorized, errors.New("unauthorized access"))
+		responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized"))
+		return
+	}
+	// Read the data posted
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		responses.ERROR(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
-	if uid != post.AuthorID {
-		responses.ERROR(w, http.StatusUnauthorized, errors.New("unauthorized access"))
+	// Start processing the request data
+	postUpdate := models.Post{}
+	err = json.Unmarshal(body, &postUpdate)
+	if err != nil {
+		responses.ERROR(w, http.StatusUnprocessableEntity, err)
+		return
 	}
 
-	post.Prepare()
-	err = post.Validate()
+	//Also check if the request user id is equal to the one gotten from token
+	if uid != postUpdate.AuthorID {
+		responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized"))
+		return
+	}
+
+	postUpdate.Prepare()
+	err = postUpdate.Validate()
+	if err != nil {
+		responses.ERROR(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+
+	postUpdate.ID = post.ID
+
+	postUpdated, err := postUpdate.UpdateAPost(s.DB)
+
 	if err != nil {
 		formattedError := formaterror.FormatError(err.Error())
 		responses.ERROR(w, http.StatusInternalServerError, formattedError)
 		return
 	}
-	responses.JSON(w, http.StatusOK, post)
+	responses.JSON(w, http.StatusOK, postUpdated)
 }
 
 func (s *Server) DeletePost(w http.ResponseWriter, r *http.Request) {
