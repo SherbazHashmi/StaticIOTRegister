@@ -1,4 +1,4 @@
-package modeltests
+package controllertests
 
 import (
 	"github.com/SherbazHashmi/goblog/api/controllers"
@@ -14,12 +14,12 @@ var server = controllers.Server{}
 var userInstance = models.User{}
 var postInstance = models.Post{}
 
-// convention
 func TestMain(m *testing.M) {
 	var err error
 	err = godotenv.Load(os.ExpandEnv("../../.env"))
+
 	if err != nil {
-		log.Fatalf("error getting env %v\n", err)
+		log.Fatalf("Unable to load environment varaibles.")
 	}
 
 	tests.SetupDatabase(&server)
@@ -29,21 +29,28 @@ func TestMain(m *testing.M) {
 
 func refreshUserTable() error {
 	err := server.DB.DropTableIfExists(&models.User{}).Error
+
 	if err != nil {
 		return err
 	}
+
 	err = server.DB.AutoMigrate(&models.User{}).Error
 
 	if err != nil {
 		return err
 	}
 
-	log.Printf("successfully refreshed tables")
+	log.Printf("successfully refreshed table")
+
 	return nil
 }
 
 func seedOneUser() (models.User, error) {
-	refreshUserTable()
+	err := refreshUserTable()
+
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	user := models.User{
 		Nickname: "Pet",
@@ -51,17 +58,17 @@ func seedOneUser() (models.User, error) {
 		Password: "password",
 	}
 
-	err := server.DB.Model(&models.User{}).Create(&user).Error
+	err = server.DB.Model(&models.User{}).Create(&user).Error
 
 	if err != nil {
-		log.Fatalf("cannot seed users table %v", err)
-		return user, err
+		return models.User{}, err
 	}
 
 	return user, nil
 }
 
-func seedUsers() []error {
+func seedUsers() ([]models.User, error) {
+	var err error
 	users := []models.User{
 		models.User{
 			Nickname: "Steven victor",
@@ -74,40 +81,29 @@ func seedUsers() []error {
 			Password: "password",
 		},
 	}
-
-	var errors []error
-
 	for i, _ := range users {
-		err := server.DB.Model(&models.User{}).Create(&users[i]).Error
+		err = server.DB.Model(&models.User{}).Create(&users[i]).Error
 		if err != nil {
-			log.Printf("unable to create user %s", users[i].Email)
-			errors = append(errors, err)
+			return []models.User{}, err
 		}
 	}
-
-	if len(errors) > 0 {
-		return errors
-	}
-
-	return nil
+	return users, nil
 }
 
 func refreshUserAndPostTable() error {
 	err := server.DB.DropTableIfExists(&models.User{}, &models.Post{}).Error
 
 	if err != nil {
-		log.Fatalf("[Error] Unable to drop tables for testing, %v", err)
 		return err
 	}
 
 	err = server.DB.AutoMigrate(&models.User{}, &models.Post{}).Error
 
 	if err != nil {
-		log.Fatalf("[Error] Unable to migrate tables for testing, %v", err)
 		return err
 	}
 
-	log.Printf("successfully refreshed tables for testing")
+	log.Printf("successfully refreshed tabes")
 	return nil
 }
 
@@ -127,20 +123,18 @@ func seedOneUserAndOnePost() (models.Post, error) {
 	err = server.DB.Model(&models.User{}).Create(&user).Error
 
 	if err != nil {
-		log.Fatalf("[ERR] Unable to create user for testing %v", err)
 		return models.Post{}, err
 	}
 
 	post := models.Post{
-		Title:    "Best title ever",
-		Content:  "Awesome content, keep coming back",
+		Title:    "This is the title sam",
+		Content:  "This is the content sam",
 		AuthorID: user.ID,
 	}
 
 	err = server.DB.Model(&models.Post{}).Create(&post).Error
 
 	if err != nil {
-		log.Fatalf("[ERR] Unable to create post\n %v", err)
 		return models.Post{}, err
 	}
 
