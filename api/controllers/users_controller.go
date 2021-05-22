@@ -10,6 +10,7 @@ import (
 	"github.com/SherbazHashmi/goblog/api/responses"
 	"github.com/gorilla/mux"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"strconv"
 )
@@ -20,6 +21,7 @@ func (s *Server) CreateUser(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		responses.ERROR(w, http.StatusUnprocessableEntity, err)
+		return
 	}
 
 	user := models.User{}
@@ -27,17 +29,17 @@ func (s *Server) CreateUser(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		responses.ERROR(w, http.StatusUnprocessableEntity, err)
+		return
 	}
 	user.Prepare()
-	err = user.Validate("")
+	errs := user.Validate("default")
 
-	if err != nil {
-		responses.ERROR(w, http.StatusUnprocessableEntity, err)
+	if len(errs) > 0  {
+		responses.ERRORS(w, http.StatusUnprocessableEntity, errs)
 		return
 	}
 
 	userCreated, err := user.SaveUser(s.DB)
-
 	if err != nil {
 		formattedError := formaterror.FormatError(err.Error())
 		responses.ERROR(w, http.StatusInternalServerError, formattedError)
@@ -45,6 +47,7 @@ func (s *Server) CreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Location", fmt.Sprintf("%s%s%d", r.Host, r.RequestURI, userCreated.ID))
+	responses.JSON(w, http.StatusCreated, userCreated)
 }
 
 func (s *Server) GetUsers(w http.ResponseWriter, r *http.Request) {
@@ -96,7 +99,6 @@ func (s *Server) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	// pattern is to setup empty user entity, take the body data and convert it to a workable object
 	user := models.User{}
 	err = json.Unmarshal(body, &user)
-
 	if err != nil {
 		responses.ERROR(w, http.StatusUnprocessableEntity, err)
 		return
@@ -105,18 +107,24 @@ func (s *Server) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	tokenID, err := auth.ExtractTokenID(r)
 
 	if err != nil {
-		responses.ERROR(w, http.StatusUnauthorized, errors.New("[Error] Unauthorized"))
+		log.Printf("user: %v, err: %v", user, err)
+
+		responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized"))
+		return
+
 	}
 
 	if tokenID != uint32(uid) {
 		responses.ERROR(w, http.StatusUnauthorized, errors.New(http.StatusText(http.StatusUnauthorized)))
+		return
+
 	}
 
 	user.Prepare()
-	err = user.Validate("update")
+	errs := user.Validate("update")
 
-	if err != nil {
-		responses.ERROR(w, http.StatusUnprocessableEntity, err)
+	if len(errs) > 0 {
+		responses.ERRORS(w, http.StatusUnprocessableEntity, errs)
 		return
 	}
 
@@ -125,6 +133,7 @@ func (s *Server) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		formattedError := formaterror.FormatError(err.Error())
 		responses.ERROR(w, http.StatusInternalServerError, formattedError)
+		return
 
 	}
 
@@ -137,6 +146,7 @@ func (s *Server) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	user := models.User{}
 
 	uid, err := strconv.ParseUint(vars["id"], 10, 32)
+	log.Printf("uid: %d", uid)
 
 	if err != nil {
 		responses.ERROR(w, http.StatusBadRequest, err)
@@ -144,6 +154,10 @@ func (s *Server) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	tokenID, err := auth.ExtractTokenID(r)
+	if err != nil {
+		responses.ERROR(w, http.StatusUnauthorized, errors.New(http.StatusText(http.StatusUnauthorized)))
+		return
+	}
 
 	if tokenID != 0 && tokenID != uint32(uid) {
 		responses.ERROR(w, http.StatusUnauthorized, errors.New(http.StatusText(http.StatusUnauthorized)))
@@ -154,6 +168,8 @@ func (s *Server) DeleteUser(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		responses.ERROR(w, http.StatusInternalServerError, err)
+		return
+
 	}
 
 	w.Header().Set("Entity", fmt.Sprintf("%d", uid))

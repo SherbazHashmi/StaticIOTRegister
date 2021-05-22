@@ -14,7 +14,7 @@ import (
 
 type User struct {
 	ID            uint32    `gorm:"primary_key;auto_increment" json:"id"`
-	Nickname      string    `gorm:"size:255; not null' unique" json:"nickname"`
+	Nickname      string    `gorm:"size:255; not null;unique" json:"nickname"`
 	Email         string    `gorm:"size:100; not null;unique" json:"email"`
 	Password      string    `gorm:"size:100; not null;" json:"password"`
 	CreatedAt     time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"created_at"`
@@ -57,10 +57,10 @@ func (u *User) Prepare() {
 	u.UpdatedAt = time.Now()
 }
 
-func (u *User) Validate(action string) error {
+func (u *User) Validate(action string) []error {
 	fieldValidations := map[string]ValidationAction{
 		"nickname": {
-			Field:               FieldValidation{Label: "nickname", Value: ""},
+			Field:               FieldValidation{Label: "nickname", Value: u.Nickname},
 			RequiredValidations: []string{"presence"},
 		},
 		"password": {
@@ -88,7 +88,7 @@ func (u *User) Validate(action string) error {
 
 	// Populates a list of validation actions
 	fieldsToValidate := actionValidationMap[action]
-	var invalidFields []string
+	var invalidFields []error
 	for _, fieldToValidate := range fieldsToValidate {
 		// retrieve validation action
 		fieldToValidate, isPresent := fieldValidations[fieldToValidate]
@@ -97,35 +97,40 @@ func (u *User) Validate(action string) error {
 		}
 
 		// Iterate through required actions and perform them
-		if !validateField(fieldToValidate) {
-			invalidFields = append(invalidFields, fieldToValidate.Field.Label)
+		if validationError := validateField(fieldToValidate); validationError != nil {
+			invalidFields = append(invalidFields, validationError)
 		}
 	}
 
 	if len(invalidFields) > 0 {
-		log.Printf(
-			fmt.Sprintf("User %s", strings.Join(invalidFields, ", ")),
-		)
-		return errors.New("Following fields are invalid: " + strings.Join(invalidFields, ", "))
+		return invalidFields
 	}
 	return nil
 }
 
-func validateField(validationAction ValidationAction) bool {
+func validateField(validationAction ValidationAction) error {
 	requiredValidations := validationAction.RequiredValidations
+
 	for _, requiredValidation := range requiredValidations {
 		switch requiredValidation {
 		case "presence":
 			if validationAction.Field.Value == "" {
-				return false
+				return errors.New(fmt.Sprintf(
+					"Required %s",
+					validationAction.Field.Label,
+					))
 			}
 		case "email_validate":
 			if checkmail.ValidateFormat(validationAction.Field.Value) != nil {
-				return false
+				return errors.New(fmt.Sprintf(
+					"Invalid %s provided",
+					validationAction.Field.Label,
+				))
 			}
 		}
+
 	}
-	return true
+	return nil
 }
 
 func (u *User) SaveUser(db *gorm.DB) (*User, error) {

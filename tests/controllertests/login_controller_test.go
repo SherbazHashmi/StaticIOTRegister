@@ -84,7 +84,7 @@ func TestLogin(t *testing.T) {
 		{
 			inputJSON:    `{"email": "pet@gmail.com", "password": "wrong password"}`,
 			statusCode:   422,
-			errorMessage: "[ERROR] Incorrect password",
+			errorMessage: "Incorrect password",
 		},
 		{
 			inputJSON:    `{"email": "frank@gmail.com", "password": "password"}`,
@@ -94,22 +94,22 @@ func TestLogin(t *testing.T) {
 		{
 			inputJSON:    `{"email": "kangmail.com", "password": "password"}`,
 			statusCode:   422,
-			errorMessage: "Following fields are invalid: email",
+			errorMessage: "Invalid email provided",
 		},
 		{
 			inputJSON:    `{"email": "", "password": "password"}`,
 			statusCode:   422,
-			errorMessage: "Following fields are invalid: email",
+			errorMessage: "Required email",
 		},
 		{
 			inputJSON:    `{"email": "kan@gmail.com", "password": ""}`,
 			statusCode:   422,
-			errorMessage: "Following fields are invalid: password",
+			errorMessage: "Required password",
 		},
 		{
 			inputJSON:    `{"email": "", "password": "password"}`,
 			statusCode:   422,
-			errorMessage: "Following fields are invalid: email",
+			errorMessage: "Required email",
 		},
 	}
 

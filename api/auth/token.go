@@ -2,6 +2,7 @@ package auth
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/dgrijalva/jwt-go"
 	"log"
@@ -55,10 +56,10 @@ func Pretty(data interface{}) {
 }
 
 func ExtractToken(r *http.Request) (string, error) {
-
 	// attempting to extract token from the url parameter
 	keys := r.URL.Query()
 	token := keys.Get("token")
+
 	if token != "" {
 		return token, nil
 	}
@@ -74,7 +75,13 @@ func ExtractToken(r *http.Request) (string, error) {
 
 func ExtractTokenID(r *http.Request) (uint32, error) {
 	tokenString, err := ExtractToken(r)
+
+	if tokenString == "" {
+		log.Print("No token provided")
+		return 0, errors.New("no token provided")
+	}
 	if err != nil {
+		log.Print(tokenString, err.Error())
 		return 0, fmt.Errorf("[ERROR] %s", err)
 	}
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
@@ -93,10 +100,13 @@ func ExtractTokenID(r *http.Request) (uint32, error) {
 	if ok && token.Valid {
 		uid, err := strconv.ParseUint(fmt.Sprintf("%.0f", claims["user_id"]), 10, 32)
 		if err != nil {
+			log.Printf("error: %s", err.Error())
 			return 0, err
 		}
 		return uint32(uid), nil
 	}
+
+
 	return 0, nil
 
 }

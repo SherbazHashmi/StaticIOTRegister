@@ -3,6 +3,7 @@ package responses
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 )
 
@@ -17,6 +18,8 @@ func JSON(w http.ResponseWriter, statusCode int, data interface{}) {
 }
 
 func ERROR(w http.ResponseWriter, statusCode int, err error) {
+	log.Print(err)
+
 	if err != nil {
 		JSON(w, statusCode, struct {
 			Error string `json:"error"`
@@ -26,4 +29,25 @@ func ERROR(w http.ResponseWriter, statusCode int, err error) {
 		return
 	}
 	JSON(w, http.StatusBadRequest, nil)
+}
+
+func ERRORS(w http.ResponseWriter, statusCode int, errs[] error) {
+	var errMessages string
+	for i, err := range errs {
+		if i < len(errs) - 1 {
+			errMessages += err.Error() + ", "
+		} else {
+			errMessages += err.Error()
+		}
+	}
+	if len(errs) > 0 {
+		JSON(w, statusCode, struct {
+			Error string `json:"error"`
+		}{
+			Error:errMessages,
+		})
+		return
+	}
+	JSON(w, http.StatusBadRequest, nil)
+	log.Fatal(errMessages)
 }

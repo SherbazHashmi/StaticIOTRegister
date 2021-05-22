@@ -28,10 +28,10 @@ func (s *Server) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user.Prepare()
-	err = user.Validate("login")
+	errs := user.Validate("login")
 
-	if err != nil {
-		responses.ERROR(w, http.StatusUnprocessableEntity, err)
+	if errs != nil {
+		responses.ERRORS(w, http.StatusUnprocessableEntity, errs)
 		return
 	}
 
