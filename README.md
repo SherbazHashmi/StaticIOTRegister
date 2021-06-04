@@ -15,7 +15,7 @@ To run the container in the background you need to use
 |-------------------------------|-------------------|--------------|----------------|----------|
 | Database                      | goblog-postgres   | 5050         | N/A            | N/A      |
 | API                           | blog_app          | 8080         | N/A            | N/A      |
-| Database Interface (pgAdmin4) | pgadmin_container | 5050         | live@admin.com | password |
+| Database Interfac e (pgAdmin4) | pgadmin_container | 5050         | live@admin.com | password |
 
 ## Closing the application
 
