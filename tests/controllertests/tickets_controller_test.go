@@ -14,9 +14,9 @@ import (
 	"testing"
 )
 
-func TestCreatePost(t *testing.T) {
+func TestCreateTicket(t *testing.T) {
 
-	err := refreshUserAndPostTable()
+	err := refreshUserAndTicketTable()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -96,12 +96,12 @@ func TestCreatePost(t *testing.T) {
 	}
 	for _, v := range samples {
 		log.Printf("---\nMaking Request\n%v", v)
-		req, err := http.NewRequest("POST", "/posts", bytes.NewBufferString(v.inputJSON))
+		req, err := http.NewRequest("POST", "/tickets", bytes.NewBufferString(v.inputJSON))
 		if err != nil {
-			t.Errorf("unable to start http post request error: %v\n", err)
+			t.Errorf("unable to start http ticket request error: %v\n", err)
 		}
 		rr := httptest.NewRecorder()
-		handler := http.HandlerFunc(server.CreatePost)
+		handler := http.HandlerFunc(server.CreateTicket)
 
 		req.Header.Set("Authorization", v.tokenGiven)
 		handler.ServeHTTP(rr, req)
@@ -124,42 +124,42 @@ func TestCreatePost(t *testing.T) {
 	}
 }
 
-func TestGetPosts(t *testing.T) {
+func TestGetTickets(t *testing.T) {
 
-	err := refreshUserAndPostTable()
+	err := refreshUserAndTicketTable()
 	if err != nil {
 		log.Fatal(err)
 	}
-	_, _, err = seedUsersAndPosts()
+	_, _, err = seedUsersAndTickets()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	req, err := http.NewRequest("GET", "/posts", nil)
+	req, err := http.NewRequest("GET", "/tickets", nil)
 	if err != nil {
 		t.Errorf("this is the error: %v\n", err)
 	}
 	rr := httptest.NewRecorder()
-	handler := http.HandlerFunc(server.GetPosts)
+	handler := http.HandlerFunc(server.GetTickets)
 	handler.ServeHTTP(rr, req)
 
-	var posts []models.Post
-	err = json.Unmarshal([]byte(rr.Body.String()), &posts)
+	var tickets []models.Ticket
+	err = json.Unmarshal([]byte(rr.Body.String()), &tickets)
 
 	assert.Equal(t, rr.Code, http.StatusOK)
-	assert.Equal(t, len(posts), 2)
+	assert.Equal(t, len(tickets), 2)
 }
-func TestGetPostByID(t *testing.T) {
+func TestGetTicketByID(t *testing.T) {
 
-	err := refreshUserAndPostTable()
+	err := refreshUserAndTicketTable()
 	if err != nil {
 		log.Fatal(err)
 	}
-	post, err := seedOneUserAndOnePost()
+	ticket, err := seedOneUserAndOneTicket()
 	if err != nil {
 		log.Fatal(err)
 	}
-	postSample := []struct {
+	ticketSample := []struct {
 		id           string
 		statusCode   int
 		title        string
@@ -168,27 +168,27 @@ func TestGetPostByID(t *testing.T) {
 		errorMessage string
 	}{
 		{
-			id:         strconv.Itoa(int(post.ID)),
+			id:         strconv.Itoa(int(ticket.ID)),
 			statusCode: 200,
-			title:      post.Title,
-			content:    post.Content,
-			author_id:  post.AuthorID,
+			title:      ticket.Title,
+			content:    ticket.Content,
+			author_id:  ticket.AuthorID,
 		},
 		{
 			id:         "unknwon",
 			statusCode: 400,
 		},
 	}
-	for _, v := range postSample {
+	for _, v := range ticketSample {
 
-		req, err := http.NewRequest("GET", "/posts", nil)
+		req, err := http.NewRequest("GET", "/tickets", nil)
 		if err != nil {
 			t.Errorf("this is the error: %v\n", err)
 		}
 		req = mux.SetURLVars(req, map[string]string{"id": v.id})
 
 		rr := httptest.NewRecorder()
-		handler := http.HandlerFunc(server.GetPost)
+		handler := http.HandlerFunc(server.GetTicket)
 		handler.ServeHTTP(rr, req)
 
 		responseMap := make(map[string]interface{})
@@ -199,24 +199,24 @@ func TestGetPostByID(t *testing.T) {
 		assert.Equal(t, rr.Code, v.statusCode)
 
 		if v.statusCode == 200 {
-			assert.Equal(t, post.Title, responseMap["title"])
-			assert.Equal(t, post.Content, responseMap["content"])
-			assert.Equal(t, float64(post.AuthorID), responseMap["author_id"]) //the response author id is float64
+			assert.Equal(t, ticket.Title, responseMap["title"])
+			assert.Equal(t, ticket.Content, responseMap["content"])
+			assert.Equal(t, float64(ticket.AuthorID), responseMap["author_id"]) //the response author id is float64
 		}
 	}
 }
 
-func TestUpdatePost(t *testing.T) {
+func TestUpdateTicket(t *testing.T) {
 
-	var PostUserEmail, PostUserPassword string
-	var AuthPostAuthorID uint32
-	var AuthPostID uint64
+	var TicketUserEmail, TicketUserPassword string
+	var AuthTicketAuthorID uint32
+	var AuthTicketID uint64
 
-	err := refreshUserAndPostTable()
+	err := refreshUserAndTicketTable()
 	if err != nil {
 		log.Fatal(err)
 	}
-	users, posts, err := seedUsersAndPosts()
+	users, tickets, err := seedUsersAndTickets()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -225,25 +225,25 @@ func TestUpdatePost(t *testing.T) {
 		if user.ID == 2 {
 			continue
 		}
-		PostUserEmail = user.Email
-		PostUserPassword = "password" //Note the password in the database is already hashed, we want unhashed
+		TicketUserEmail = user.Email
+		TicketUserPassword = "password" //Note the password in the database is already hashed, we want unhashed
 	}
 	//Login the user and get the authentication token
-	token, err := server.SignIn(PostUserEmail, PostUserPassword)
+	token, err := server.SignIn(TicketUserEmail, TicketUserPassword)
 	if err != nil {
 		log.Fatalf("cannot login: %v\n", err)
 	}
 	tokenString := fmt.Sprintf("Bearer %v", token)
 
-	// Get only the first post
-	for _, post := range posts {
-		if post.ID == 2 {
+	// Get only the first ticket
+	for _, ticket := range tickets {
+		if ticket.ID == 2 {
 			continue
 		}
-		AuthPostID = post.ID
-		AuthPostAuthorID = post.AuthorID
+		AuthTicketID = ticket.ID
+		AuthTicketAuthorID = ticket.AuthorID
 	}
-	// fmt.Printf("this is the auth post: %v\n", AuthPostID)
+	// fmt.Printf("this is the auth ticket: %v\n", AuthTicketID)
 
 	samples := []struct {
 		id           string
@@ -257,18 +257,18 @@ func TestUpdatePost(t *testing.T) {
 	}{
 		{
 			// Convert int64 to int first before converting to string
-			id:           strconv.Itoa(int(AuthPostID)),
-			updateJSON:   `{"title":"The updated post", "content": "This is the updated content", "author_id": 1}`,
+			id:           strconv.Itoa(int(AuthTicketID)),
+			updateJSON:   `{"title":"The updated ticket", "content": "This is the updated content", "author_id": 1}`,
 			statusCode:   200,
-			title:        "The updated post",
+			title:        "The updated ticket",
 			content:      "This is the updated content",
-			author_id:    AuthPostAuthorID,
+			author_id:    AuthTicketAuthorID,
 			tokenGiven:   tokenString,
 			errorMessage: "",
 		},
 		{
 			// When no token is provided
-			id:           strconv.Itoa(int(AuthPostID)),
+			id:           strconv.Itoa(int(AuthTicketID)),
 			updateJSON:   `{"title":"This is still another title", "content": "This is the updated content", "author_id": 1}`,
 			tokenGiven:   "",
 			statusCode:   401,
@@ -276,36 +276,36 @@ func TestUpdatePost(t *testing.T) {
 		},
 		{
 			// When incorrect token is provided
-			id:           strconv.Itoa(int(AuthPostID)),
+			id:           strconv.Itoa(int(AuthTicketID)),
 			updateJSON:   `{"title":"This is still another title", "content": "This is the updated content", "author_id": 1}`,
 			tokenGiven:   "this is an incorrect token",
 			statusCode:   401,
 			errorMessage: "Unauthorized",
 		},
 		{
-			//Note: "Title 2" belongs to post 2, and title must be unique
-			id:           strconv.Itoa(int(AuthPostID)),
+			//Note: "Title 2" belongs to ticket 2, and title must be unique
+			id:           strconv.Itoa(int(AuthTicketID)),
 			updateJSON:   `{"title":"Title 2", "content": "This is the updated content", "author_id": 1}`,
 			statusCode:   500,
 			tokenGiven:   tokenString,
 			errorMessage: "title already taken",
 		},
 		{
-			id:           strconv.Itoa(int(AuthPostID)),
+			id:           strconv.Itoa(int(AuthTicketID)),
 			updateJSON:   `{"title":"", "content": "This is the updated content", "author_id": 1}`,
 			statusCode:   422,
 			tokenGiven:   tokenString,
 			errorMessage: "Required Title",
 		},
 		{
-			id:           strconv.Itoa(int(AuthPostID)),
+			id:           strconv.Itoa(int(AuthTicketID)),
 			updateJSON:   `{"title":"Awesome title", "content": "", "author_id": 1}`,
 			statusCode:   422,
 			tokenGiven:   tokenString,
 			errorMessage: "Required Content",
 		},
 		{
-			id:           strconv.Itoa(int(AuthPostID)),
+			id:           strconv.Itoa(int(AuthTicketID)),
 			updateJSON:   `{"title":"This is another title", "content": "This is the updated content"}`,
 			statusCode:   401,
 			tokenGiven:   tokenString,
@@ -316,7 +316,7 @@ func TestUpdatePost(t *testing.T) {
 			statusCode: 400,
 		},
 		{
-			id:           strconv.Itoa(int(AuthPostID)),
+			id:           strconv.Itoa(int(AuthTicketID)),
 			updateJSON:   `{"title":"This is still another title", "content": "This is the updated content", "author_id": 2}`,
 			tokenGiven:   tokenString,
 			statusCode:   401,
@@ -326,13 +326,13 @@ func TestUpdatePost(t *testing.T) {
 
 	for _, v := range samples {
 
-		req, err := http.NewRequest("POST", "/posts", bytes.NewBufferString(v.updateJSON))
+		req, err := http.NewRequest("POST", "/tickets", bytes.NewBufferString(v.updateJSON))
 		if err != nil {
 			t.Errorf("this is the error: %v\n", err)
 		}
 		req = mux.SetURLVars(req, map[string]string{"id": v.id})
 		rr := httptest.NewRecorder()
-		handler := http.HandlerFunc(server.UpdatePost)
+		handler := http.HandlerFunc(server.UpdateTicket)
 
 		req.Header.Set("Authorization", v.tokenGiven)
 
@@ -358,17 +358,17 @@ func TestUpdatePost(t *testing.T) {
 	}
 }
 
-func TestDeletePost(t *testing.T) {
+func TestDeleteTicket(t *testing.T) {
 
-	var PostUserEmail, PostUserPassword string
-	var PostUserID uint32
-	var AuthPostID uint64
+	var TicketUserEmail, TicketUserPassword string
+	var TicketUserID uint32
+	var AuthTicketID uint64
 
-	err := refreshUserAndPostTable()
+	err := refreshUserAndTicketTable()
 	if err != nil {
 		log.Fatal(err)
 	}
-	users, posts, err := seedUsersAndPosts()
+	users, tickets, err := seedUsersAndTickets()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -377,25 +377,25 @@ func TestDeletePost(t *testing.T) {
 		if user.ID == 1 {
 			continue
 		}
-		PostUserEmail = user.Email
-		PostUserPassword = "password" //Note the password in the database is already hashed, we want unhashed
+		TicketUserEmail = user.Email
+		TicketUserPassword = "password" //Note the password in the database is already hashed, we want unhashed
 	}
 	//Login the user and get the authentication token
-	token, err := server.SignIn(PostUserEmail, PostUserPassword)
+	token, err := server.SignIn(TicketUserEmail, TicketUserPassword)
 	if err != nil {
 		log.Fatalf("cannot login: %v\n", err)
 	}
 	tokenString := fmt.Sprintf("Bearer %v", token)
 
-	// Get only the second post
-	for _, post := range posts {
-		if post.ID == 1 {
+	// Get only the second ticket
+	for _, ticket := range tickets {
+		if ticket.ID == 1 {
 			continue
 		}
-		AuthPostID = post.ID
-		PostUserID = post.AuthorID
+		AuthTicketID = ticket.ID
+		TicketUserID = ticket.AuthorID
 	}
-	postSample := []struct {
+	ticketSample := []struct {
 		id           string
 		author_id    uint32
 		tokenGiven   string
@@ -404,24 +404,24 @@ func TestDeletePost(t *testing.T) {
 	}{
 		{
 			// Convert int64 to int first before converting to string
-			id:           strconv.Itoa(int(AuthPostID)),
-			author_id:    PostUserID,
+			id:           strconv.Itoa(int(AuthTicketID)),
+			author_id:    TicketUserID,
 			tokenGiven:   tokenString,
 			statusCode:   204,
 			errorMessage: "",
 		},
 		{
 			// When empty token is passed
-			id:           strconv.Itoa(int(AuthPostID)),
-			author_id:    PostUserID,
+			id:           strconv.Itoa(int(AuthTicketID)),
+			author_id:    TicketUserID,
 			tokenGiven:   "",
 			statusCode:   401,
 			errorMessage: "unauthorized",
 		},
 		{
 			// When incorrect token is passed
-			id:           strconv.Itoa(int(AuthPostID)),
-			author_id:    PostUserID,
+			id:           strconv.Itoa(int(AuthTicketID)),
+			author_id:    TicketUserID,
 			tokenGiven:   "This is an incorrect token",
 			statusCode:   401,
 			errorMessage: "unauthorized",
@@ -438,13 +438,13 @@ func TestDeletePost(t *testing.T) {
 			errorMessage: "unauthorized",
 		},
 	}
-	for _, v := range postSample {
+	for _, v := range ticketSample {
 
-		req, _ := http.NewRequest("GET", "/posts", nil)
+		req, _ := http.NewRequest("GET", "/tickets", nil)
 		req = mux.SetURLVars(req, map[string]string{"id": v.id})
 
 		rr := httptest.NewRecorder()
-		handler := http.HandlerFunc(server.DeletePost)
+		handler := http.HandlerFunc(server.DeleteTicket)
 
 		req.Header.Set("Authorization", v.tokenGiven)
 

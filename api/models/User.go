@@ -21,6 +21,8 @@ type User struct {
 	UpdatedAt          time.Time `gorm:"default:CURRENT_TIMESTAMP" json:"updated_at"`
 	AccountActive      bool      `gorm:"default:true" json:"active"`
 	LastLogin          time.Time `gorm:"default: CURRENT_TIMESTAMP" json:"last_login"`
+	CurrentPucHeldID   uint64
+	CurrentPucHeld 	   *Puc `json:"current_puc_held"`
 }
 
 type FieldValidation struct {

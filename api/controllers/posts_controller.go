@@ -16,7 +16,7 @@ import (
 	"strings"
 )
 
-func (s *Server) CreatePost(w http.ResponseWriter, r *http.Request) {
+func (s *Server) CreateTicket(w http.ResponseWriter, r *http.Request) {
 	body, err := ioutil.ReadAll(r.Body)
 
 	if err != nil {
@@ -24,10 +24,10 @@ func (s *Server) CreatePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	post := models.Post{}
+	ticket := models.Ticket{}
 
-	err = json.Unmarshal(body, &post)
-	log.Printf("author_id: %v", post.AuthorID)
+	err = json.Unmarshal(body, &ticket)
+	log.Printf("author_id: %v", ticket.AuthorID)
 	if err != nil {
 		responses.ERROR(w, http.StatusUnprocessableEntity, err)
 		return
@@ -38,19 +38,19 @@ func (s *Server) CreatePost(w http.ResponseWriter, r *http.Request) {
 		responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized access"))
 		return
 	}
-	//log.Printf("uid: %d, post: %v", uid, post)
+	//log.Printf("uid: %d, ticket: %v", uid, ticket)
 
-	if post.AuthorID == 0 {
+	if ticket.AuthorID == 0 {
 		responses.ERROR(w, http.StatusUnprocessableEntity, errors.New("Required Author"))
 		return
 	}
-	if uid != post.AuthorID {
+	if uid != ticket.AuthorID {
 		responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized access"))
 		return
 	}
 
 
-	postCreated, err := post.SavePost(s.DB)
+	ticketCreated, err := ticket.SaveTicket(s.DB)
 	if err != nil {
 
 		if strings.Contains(err.Error(), "equired"){
@@ -61,43 +61,43 @@ func (s *Server) CreatePost(w http.ResponseWriter, r *http.Request) {
 		responses.ERROR(w, http.StatusInternalServerError, formattedError)
 		return
 	}
-	w.Header().Set("Location", fmt.Sprintf("%s%s/%d", r.Host,r.URL.Path, postCreated.ID))
-	responses.JSON(w, http.StatusCreated, postCreated)
+	w.Header().Set("Location", fmt.Sprintf("%s%s/%d", r.Host,r.URL.Path, ticketCreated.ID))
+	responses.JSON(w, http.StatusCreated, ticketCreated)
 }
 
-func (s *Server) GetPosts(w http.ResponseWriter, _ *http.Request) {
-	post := models.Post{}
+func (s *Server) GetTickets(w http.ResponseWriter, _ *http.Request) {
+	ticket := models.Ticket{}
 
-	posts, err := post.FindAllPosts(s.DB)
+	tickets, err := ticket.FindAllTickets(s.DB)
 
 	if err != nil {
 		responses.ERROR(w, http.StatusInternalServerError, err)
 		return
 	}
-	responses.JSON(w, http.StatusOK, posts)
+	responses.JSON(w, http.StatusOK, tickets)
 }
 
-func (s *Server) GetPost(w http.ResponseWriter, r *http.Request) {
+func (s *Server) GetTicket(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	pid, err := strconv.ParseUint(vars["id"], 10, 64)
 	if err != nil {
 		responses.ERROR(w, http.StatusBadRequest, err)
 		return
 	}
-	post := models.Post{}
+	ticket := models.Ticket{}
 
-	postReceived, err := post.FindPostByID(s.DB, pid)
+	ticketReceived, err := ticket.FindTicketByID(s.DB, pid)
 	if err != nil {
 		responses.ERROR(w, http.StatusInternalServerError, err)
 		return
 	}
-	responses.JSON(w, http.StatusOK, postReceived)
+	responses.JSON(w, http.StatusOK, ticketReceived)
 }
 
-func (s *Server) UpdatePost(w http.ResponseWriter, r *http.Request) {
+func (s *Server) UpdateTicket(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
-	// Check if the post id is valid
+	// Check if the ticket id is valid
 	pid, err := strconv.ParseUint(vars["id"], 10, 64)
 	if err != nil {
 		responses.ERROR(w, http.StatusBadRequest, err)
@@ -111,20 +111,20 @@ func (s *Server) UpdatePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check if the post exist
-	post := models.Post{}
-	err = s.DB.Debug().Model(models.Post{}).Where("id = ?", pid).Take(&post).Error
+	// Check if the ticket exist
+	ticket := models.Ticket{}
+	err = s.DB.Debug().Model(models.Ticket{}).Where("id = ?", pid).Take(&ticket).Error
 	if err != nil {
-		responses.ERROR(w, http.StatusNotFound, errors.New("Post not found"))
+		responses.ERROR(w, http.StatusNotFound, errors.New("Ticket not found"))
 		return
 	}
 
-	// If a user attempt to update a post not belonging to him
-	if uid != post.AuthorID {
+	// If a user attempt to update a ticket not belonging to him
+	if uid != ticket.AuthorID {
 		responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized"))
 		return
 	}
-	// Read the data posted
+	// Read the data ticketed
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		responses.ERROR(w, http.StatusUnprocessableEntity, err)
@@ -132,39 +132,39 @@ func (s *Server) UpdatePost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Start processing the request data
-	postUpdate := models.Post{}
-	err = json.Unmarshal(body, &postUpdate)
+	ticketUpdate := models.Ticket{}
+	err = json.Unmarshal(body, &ticketUpdate)
 	if err != nil {
 		responses.ERROR(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
 	//Also check if the request user id is equal to the one gotten from token
-	if uid != postUpdate.AuthorID {
+	if uid != ticketUpdate.AuthorID {
 		responses.ERROR(w, http.StatusUnauthorized, errors.New("Unauthorized"))
 		return
 	}
 
-	postUpdate.Prepare()
-	err = postUpdate.Validate()
+	ticketUpdate.Prepare()
+	err = ticketUpdate.Validate()
 	if err != nil {
 		responses.ERROR(w, http.StatusUnprocessableEntity, err)
 		return
 	}
 
-	postUpdate.ID = post.ID
+	ticketUpdate.ID = ticket.ID
 
-	postUpdated, err := postUpdate.UpdateAPost(s.DB)
+	ticketUpdated, err := ticketUpdate.UpdateATicket(s.DB)
 
 	if err != nil {
 		formattedError := formaterror.FormatError(err.Error())
 		responses.ERROR(w, http.StatusInternalServerError, formattedError)
 		return
 	}
-	responses.JSON(w, http.StatusOK, postUpdated)
+	responses.JSON(w, http.StatusOK, ticketUpdated)
 }
 
-func (s *Server) DeletePost(w http.ResponseWriter, r *http.Request) {
+func (s *Server) DeleteTicket(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
 	pid, err := strconv.ParseUint(vars["id"], 10, 64)
@@ -179,18 +179,18 @@ func (s *Server) DeletePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	post := models.Post{}
-	err = s.DB.Debug().Model(models.Post{}).Where("id = ?", pid).Take(&post).Error
+	ticket := models.Ticket{}
+	err = s.DB.Debug().Model(models.Ticket{}).Where("id = ?", pid).Take(&ticket).Error
 	if err != nil {
 		responses.ERROR(w, http.StatusNotFound, errors.New("unauthorized"))
 		return
 	}
 
-	if uid != post.AuthorID {
+	if uid != ticket.AuthorID {
 		responses.ERROR(w, http.StatusUnauthorized, errors.New("unauthorized"))
 		return
 	}
-	_, err = post.DeleteAPost(s.DB, pid, uid)
+	_, err = ticket.DeleteATicket(s.DB, pid, uid)
 	if err != nil {
 		responses.ERROR(w, http.StatusBadRequest, err)
 		return

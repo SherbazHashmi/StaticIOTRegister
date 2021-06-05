@@ -6,7 +6,7 @@ import (
 	"log"
 )
 
-var users = []models.User{
+var users = []models.User {
 	models.User{
 		Nickname: "Steven victor",
 		Email:    "steven@gmail.com",
@@ -19,29 +19,53 @@ var users = []models.User{
 	},
 }
 
-var posts = []models.Post{
-	models.Post{
+var tickets = []models.Ticket {
+	models.Ticket{
 		Title:   "Title 1",
 		Content: "Hello world 1",
 	},
-	models.Post{
+	models.Ticket{
 		Title:   "Title 2",
 		Content: "Hello world 2",
 	},
 }
 
+var organisations = []models.Organisation {
+	{
+		Region: "Canberra",
+		EntityName: "Ladomme Cafe",
+	},
+	{
+		Region: "Canberra",
+		EntityName: "Le Bon",
+	},
+	{
+		Region: "Canberra",
+		EntityName: "High Road",
+	},
+	{
+		Region: "Canberra",
+		EntityName: "Two Before Ten",
+	},
+	{
+		Region: "Melbourne",
+		EntityName: "Higher Ground",
+	},
+
+}
+
 func Load(db *gorm.DB) {
 
-	err := db.Debug().DropTableIfExists(&models.Post{}, &models.User{}).Error
+	err := db.Debug().DropTableIfExists(&models.Ticket{}, &models.User{}).Error
 	if err != nil {
 		log.Fatalf("cannot drop table: %v", err)
 	}
-	err = db.Debug().AutoMigrate(&models.User{}, &models.Post{}).Error
+	err = db.Debug().AutoMigrate(&models.User{}, &models.Ticket{}).Error
 	if err != nil {
 		log.Fatalf("cannot migrate table: %v", err)
 	}
 
-	err = db.Debug().Model(&models.Post{}).AddForeignKey("author_id", "users(id)", "cascade", "cascade").Error
+	err = db.Debug().Model(&models.Ticket{}).AddForeignKey("author_id", "users(id)", "cascade", "cascade").Error
 	if err != nil {
 		log.Fatalf("attaching foreign key error: %v", err)
 	}
@@ -51,11 +75,11 @@ func Load(db *gorm.DB) {
 		if err != nil {
 			log.Fatalf("cannot seed users table: %v", err)
 		}
-		posts[i].AuthorID = users[i].ID
+		tickets[i].AuthorID = users[i].ID
 
-		err = db.Debug().Model(&models.Post{}).Create(&posts[i]).Error
+		err = db.Debug().Model(&models.Ticket{}).Create(&tickets[i]).Error
 		if err != nil {
-			log.Fatalf("cannot seed posts table: %v", err)
+			log.Fatalf("cannot seed tickets table: %v", err)
 		}
 	}
 }

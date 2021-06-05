@@ -32,7 +32,7 @@ func (s *Server) Initialize(dbDriver, dbUser, dbPort, dbPassword, dbHost, dbName
 		}
 	}
 
-	s.DB.Debug().AutoMigrate(&models.User{}, &models.Post{}) // Database migration
+	s.DB.Debug().AutoMigrate(&models.User{}, &models.Ticket{}) // Database migration
 	s.Router = mux.NewRouter()
 	s.initializeRoutes()
 }

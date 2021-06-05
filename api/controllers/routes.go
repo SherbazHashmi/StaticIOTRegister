@@ -17,9 +17,9 @@ func (s *Server) initializeRoutes() {
 	s.Router.HandleFunc("/users/{id}", middleware.SetMiddlewareJSON(middleware.SetMiddlewareAuthentication(s.UpdateUser))).Methods("PUT")
 	s.Router.HandleFunc("/users/{id}", middleware.SetMiddlewareAuthentication(s.DeleteUser)).Methods("DELETE")
 	//Posts routes
-	s.Router.HandleFunc("/posts", middleware.SetMiddlewareJSON(s.CreatePost)).Methods("POST")
-	s.Router.HandleFunc("/posts", middleware.SetMiddlewareJSON(s.GetPosts)).Methods("GET")
-	s.Router.HandleFunc("/posts/{id}", middleware.SetMiddlewareJSON(s.GetPost)).Methods("GET")
-	s.Router.HandleFunc("/posts/{id}", middleware.SetMiddlewareJSON(middleware.SetMiddlewareAuthentication(s.UpdatePost))).Methods("PUT")
-	s.Router.HandleFunc("/posts/{id}", middleware.SetMiddlewareAuthentication(s.DeletePost)).Methods("DELETE")
+	s.Router.HandleFunc("/Tickets", middleware.SetMiddlewareJSON(s.CreateTicket)).Methods("POST")
+	s.Router.HandleFunc("/Tickets", middleware.SetMiddlewareJSON(s.GetTickets)).Methods("GET")
+	s.Router.HandleFunc("/tickets/{id}", middleware.SetMiddlewareJSON(s.GetTicket)).Methods("GET")
+	s.Router.HandleFunc("/tickets/{id}", middleware.SetMiddlewareJSON(middleware.SetMiddlewareAuthentication(s.UpdateTicket))).Methods("PUT")
+	s.Router.HandleFunc("/tickets/{id}", middleware.SetMiddlewareAuthentication(s.DeleteTicket)).Methods("DELETE")
 }

@@ -12,7 +12,7 @@ import (
 
 var server = controllers.Server{}
 var userInstance = models.User{}
-var postInstance = models.Post{}
+var ticketInstance = models.Ticket{}
 
 func TestMain(m *testing.M) {
 	var err error
@@ -90,14 +90,14 @@ func seedUsers() ([]models.User, error) {
 	return users, nil
 }
 
-func refreshUserAndPostTable() error {
-	err := server.DB.DropTableIfExists(&models.User{}, &models.Post{}).Error
+func refreshUserAndTicketTable() error {
+	err := server.DB.DropTableIfExists(&models.User{}, &models.Ticket{}).Error
 
 	if err != nil {
 		return err
 	}
 
-	err = server.DB.AutoMigrate(&models.User{}, &models.Post{}).Error
+	err = server.DB.AutoMigrate(&models.User{}, &models.Ticket{}).Error
 
 	if err != nil {
 		return err
@@ -107,11 +107,11 @@ func refreshUserAndPostTable() error {
 	return nil
 }
 
-func seedOneUserAndOnePost() (models.Post, error) {
-	err := refreshUserAndPostTable()
+func seedOneUserAndOneTicket() (models.Ticket, error) {
+	err := refreshUserAndTicketTable()
 
 	if err != nil {
-		return models.Post{}, err
+		return models.Ticket{}, err
 	}
 
 	user := models.User{
@@ -123,25 +123,25 @@ func seedOneUserAndOnePost() (models.Post, error) {
 	err = server.DB.Model(&models.User{}).Create(&user).Error
 
 	if err != nil {
-		return models.Post{}, err
+		return models.Ticket{}, err
 	}
 
-	post := models.Post{
+	ticket := models.Ticket{
 		Title:    "This is the title sam",
 		Content:  "This is the content sam",
 		AuthorID: user.ID,
 	}
 
-	err = server.DB.Model(&models.Post{}).Create(&post).Error
+	err = server.DB.Model(&models.Ticket{}).Create(&ticket).Error
 
 	if err != nil {
-		return models.Post{}, err
+		return models.Ticket{}, err
 	}
 
-	return post, nil
+	return ticket, nil
 }
 
-func seedUsersAndPosts() ([]models.User, []models.Post, error) {
+func seedUsersAndTickets() ([]models.User, []models.Ticket, error) {
 	var err error
 
 	var users = []models.User{
@@ -156,12 +156,12 @@ func seedUsersAndPosts() ([]models.User, []models.Post, error) {
 			Password: "password",
 		},
 	}
-	var posts = []models.Post{
-		models.Post{
+	var tickets = []models.Ticket{
+		models.Ticket{
 			Title:   "Title 1",
 			Content: "Hello world 1",
 		},
-		models.Post{
+		models.Ticket{
 			Title:   "Title 2",
 			Content: "Hello world 2",
 		},
@@ -172,12 +172,12 @@ func seedUsersAndPosts() ([]models.User, []models.Post, error) {
 		if err != nil {
 			log.Fatalf("cannot seed users table: %v", err)
 		}
-		posts[i].AuthorID = users[i].ID
+		tickets[i].AuthorID = users[i].ID
 
-		err = server.DB.Model(&models.Post{}).Create(&posts[i]).Error
+		err = server.DB.Model(&models.Ticket{}).Create(&tickets[i]).Error
 		if err != nil {
-			log.Fatalf("cannot seed posts table: %v", err)
+			log.Fatalf("cannot seed tickets table: %v", err)
 		}
 	}
-	return users, posts, nil
+	return users, tickets, nil
 }
